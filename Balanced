@@ -1,0 +1,37 @@
+using System;
+
+class Program
+{
+    static void Main()
+    {
+        Console.WriteLine("Enter an expression to check for balanced parentheses:");
+        string sequence = Console.ReadLine();
+        
+        bool result = IsProperly(sequence);
+        Console.WriteLine(result ? "Correctly balanced" : "Incorrectly balanced");
+    }
+
+    static bool IsProperly(string sequence)
+    {
+        int balance = 0;
+
+        foreach (char ch in sequence)
+        {
+            if (ch == '(')
+            {
+                balance++;
+            }
+            else if (ch == ')')
+            {
+                balance--;
+            }
+
+            if (balance < 0)
+            {
+                return false;
+            }
+        }
+
+        return balance == 0;
+    }
+}
