@@ -1,0 +1,100 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
+
+public class Teacher
+{
+    public int TeacherId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Surname { get; set; } = string.Empty;
+    public string Gender { get; set; } = string.Empty;
+    public string Subject { get; set; } = string.Empty;
+    public List<Pupil> Pupils { get; set; } = new();
+}
+
+public class Pupil
+{
+    public int PupilId { get; set; }
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string Gender { get; set; } = string.Empty;
+    public string Class { get; set; } = string.Empty;
+    public List<Teacher> Teachers { get; set; } = new();
+}
+
+public class SchoolDbContext : DbContext
+{
+    public DbSet<Teacher> Teachers { get; set; }
+    public DbSet<Pupil> Pupils { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder options)
+    {
+        options.UseInMemoryDatabase("SchoolDB");
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Teacher>()
+            .HasMany(t => t.Pupils)
+            .WithMany(p => p.Teachers)
+            .UsingEntity(j => j.ToTable("TeacherPupil"));
+    }
+}
+
+public class SchoolService
+{
+    private readonly SchoolDbContext _dbContext;
+
+    public SchoolService(SchoolDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public List<Teacher> GetAllTeachersByStudent(string studentName)
+    {
+        return _dbContext.Teachers
+            .Where(t => t.Pupils.Any(p => p.FirstName == studentName))
+            .ToList();
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        using (var dbContext = new SchoolDbContext())
+        {
+            SeedDatabase(dbContext);
+
+            var schoolService = new SchoolService(dbContext);
+            var teachersForGiorgi = schoolService.GetAllTeachersByStudent("Giorgi");
+
+            Console.WriteLine("Teachers who teach Giorgi:");
+            foreach (var teacher in teachersForGiorgi)
+            {
+                Console.WriteLine($"{teacher.Name} {teacher.Surname} teaches {teacher.Subject}");
+            }
+        }
+    }
+
+    static void SeedDatabase(SchoolDbContext context)
+    {
+        if (!context.Teachers.Any())
+        {
+            var teacher1 = new Teacher { Name = "Mariam", Surname = "Natroshvili", Gender = "Female", Subject = "Math" };
+            var teacher2 = new Teacher { Name = "Salome", Surname = "Kvernadze", Gender = "Female", Subject = "History" };
+
+            var pupil1 = new Pupil { FirstName = "Giorgi", LastName = "Lomidze", Gender = "Male", Class = "5A" };
+            var pupil2 = new Pupil { FirstName = "Levan", LastName = "Pirveli", Gender = "Male", Class = "5B" };
+
+            teacher1.Pupils.Add(pupil1);
+            teacher2.Pupils.Add(pupil1);
+            teacher1.Pupils.Add(pupil2);
+
+            context.Teachers.AddRange(teacher1, teacher2);
+            context.Pupils.AddRange(pupil1, pupil2);
+            context.SaveChanges();
+        }
+    }
+}
