@@ -1,0 +1,5 @@
+SELECT T.first_name AS TeacherFirstName, T.last_name AS TeacherLastName
+FROM Teacher T
+JOIN TeacherPupil TP ON T.teacher_id = TP.teacher_id
+JOIN Pupil P ON TP.pupil_id = P.pupil_id
+WHERE P.first_name = 'გიორგი';
